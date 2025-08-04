@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import {
@@ -195,26 +197,27 @@ export default function YouTubeClonePage() {
       console.log("Mahfil API Response:", data)
 
       // Transform Mahfil API data to match our component structure
-      const transformedVideos = data.results?.map((video: any) => ({
-        id: video.id,
-        title: video.title,
-        channel: video.channel_name,
-        views: video.views_in_number + " views",
-        timeAgo: formatTimeAgo(video.created_at),
-        duration: video.duration,
-        thumbnail: video.thumbnail,
-        channelInitial: video.channel_name?.charAt(0)?.toUpperCase() || "M",
-        description: video.description?.replace(/<[^>]*>/g, '') || "", // Remove HTML tags
-        type: video.type?.toLowerCase() === "waz" ? "video" : "video", // Map Waz to video type
-        channelImage: video.channel_image,
-        channelUsername: video.channel_username,
-        isVerified: video.is_verified,
-        likes: video.like,
-        mashallah: video.mashallah,
-        commentCount: video.comment_count,
-        mp4Urls: video.mp4_urls,
-        manifest: video.manifest
-      })) || []
+      const transformedVideos =
+        data.results?.map((video: any) => ({
+          id: video.id,
+          title: video.title,
+          channel: video.channel_name,
+          views: video.views_in_number + " views",
+          timeAgo: formatTimeAgo(video.created_at),
+          duration: video.duration,
+          thumbnail: video.thumbnail,
+          channelInitial: video.channel_name?.charAt(0)?.toUpperCase() || "M",
+          description: video.description?.replace(/<[^>]*>/g, "") || "", // Remove HTML tags
+          type: video.type?.toLowerCase() === "waz" ? "video" : "video", // Map Waz to video type
+          channelImage: video.channel_image,
+          channelUsername: video.channel_username,
+          isVerified: video.is_verified,
+          likes: video.like,
+          mashallah: video.mashallah,
+          commentCount: video.comment_count,
+          mp4Urls: video.mp4_urls,
+          manifest: video.manifest,
+        })) || []
 
       setVideos(transformedVideos)
       if (transformedVideos.length === 0) {
@@ -266,7 +269,7 @@ export default function YouTubeClonePage() {
     console.log("Searching for:", searchQuery)
   }
 
-  const playVideo = (video) => {
+  const playVideo = (video: any) => {
     setSelectedVideo(video)
   }
 
@@ -274,14 +277,14 @@ export default function YouTubeClonePage() {
     setSelectedVideo(null)
   }
 
-  const handleImageError = (event) => {
-    event.target.src = "/placeholder.svg?height=180&width=320&text=Video+Thumbnail"
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    event.currentTarget.src = "/placeholder.svg?height=180&width=320&text=Video+Thumbnail"
   }
 
-  const regularVideos = videos.filter((video) => video.type === "video")
-  const shortsVideos = videos.filter((video) => video.type === "clip")
+  const regularVideos = videos.filter((video: any) => video.type === "video")
+  const shortsVideos = videos.filter((video: any) => video.type === "clip")
 
-  const filteredRegularVideos = regularVideos.filter((video) => {
+  const filteredRegularVideos = regularVideos.filter((video: any) => {
     const matchesCategory = selectedCategory === "All" || selectedCategory === "Videos" || selectedCategory !== "Clips"
     const matchesSearch =
       searchQuery === "" ||
@@ -291,7 +294,7 @@ export default function YouTubeClonePage() {
     return matchesCategory && matchesSearch
   })
 
-  const filteredShortsVideos = shortsVideos.filter((video) => {
+  const filteredShortsVideos = shortsVideos.filter((video: any) => {
     const matchesCategory = selectedCategory === "All" || selectedCategory === "Clips" || selectedCategory !== "Videos"
     const matchesSearch =
       searchQuery === "" ||
