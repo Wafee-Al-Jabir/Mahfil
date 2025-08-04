@@ -250,53 +250,51 @@ export default function YouTubeClonePage() {
       <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-50">
         <div className="flex items-center justify-between px-4 py-3">
           {/* Left section */}
-          <div className="flex items-center space-x-4">
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-              <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-            </button>
-            <div className="flex items-center space-x-2">
-              {isDarkMode ? <YouTubeLogoDark className="h-8 w-auto" /> : <YouTubeLogoLight className="h-8 w-auto" />}
-            </div>
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+            <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+          </button>
+          <div className="flex items-center space-x-2">
+            {isDarkMode ? <YouTubeLogoDark className="h-8 w-auto" /> : <YouTubeLogoLight className="h-8 w-auto" />}
           </div>
+        </div>
 
-          {/* Center section - Search */}
-          <div className="flex-1 max-w-2xl mx-8">
-            <div className="flex">
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-l-full focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-              />
-              <button
-                title="Search videos"
-                onClick={handleSearch}
-                className="px-6 py-2 bg-gray-50 dark:bg-gray-700 border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-full hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Center section - Search */}
+        <div className="flex-1 max-w-2xl mx-8">
+          <div className="flex">
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-l-full focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+            />
+            <button
+              title="Search videos"
+              onClick={handleSearch}
+              className="px-6 py-2 bg-gray-50 dark:bg-gray-700 border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-full hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+            >
+              <Search className="w-5 h-5" />
+            </button>
           </div>
+        </div>
 
-          {/* Right section */}
-          <div className="flex items-center space-x-4">
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-              <Video className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-              <Bell className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full" onClick={fetchVideos}>
-              <RotateCw className="w-6 h-6 text-gray-700 dark:text-gray-300" /> {/* Refresh/Reload icon */}
-            </button>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full" onClick={toggleDarkMode}>
-              {isDarkMode ? <Sun className="w-6 h-6 text-yellow-400" /> : <Moon className="w-6 h-6 text-gray-700" />}
-            </button>
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <User className="w-5 h-5 text-white" /> {/* User icon, or 'U' if no icon */}
-            </div>
+        {/* Right section */}
+        <div className="flex items-center space-x-4">
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+            <Video className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+          </button>
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+            <Bell className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+          </button>
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full" onClick={fetchVideos}>
+            <RotateCw className="w-6 h-6 text-gray-700 dark:text-gray-300" /> {/* Refresh/Reload icon */}
+          </button>
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full" onClick={toggleDarkMode}>
+            {isDarkMode ? <Sun className="w-6 h-6 text-yellow-400" /> : <Moon className="w-6 h-6 text-gray-700" />}
+          </button>
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <User className="w-5 h-5 text-white" /> {/* User icon, or 'U' if no icon */}
           </div>
         </div>
       </header>
