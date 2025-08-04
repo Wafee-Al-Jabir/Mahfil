@@ -37,70 +37,16 @@ import Link from "next/link"
 export default function YouTubeClonePage() {
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [selectedVideo, setSelectedVideo] = useState(null)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedVideo, setSelectedVideo] = useState<any>(null)
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
   const [isDarkMode, setIsDarkMode] = useState(false)
 
-  // Mock data as fallback
-  const mockVideos = [
-    {
-      id: "mock1",
-      title: "Building a Modern Web Application with Vue 3 and Tailwind CSS",
-      channel: "Tech Tutorials",
-      views: "1.2M views",
-      timeAgo: "2 days ago",
-      duration: "15:30",
-      thumbnail: "/placeholder.svg?height=180&width=320&text=Vue+3+Tutorial",
-      channelInitial: "T",
-      description:
-        "Learn how to build modern web applications using Vue 3 and Tailwind CSS. This comprehensive tutorial covers everything from setup to deployment.",
-      type: "video",
-    },
-    {
-      id: "mock2",
-      title: "10 JavaScript Tips Every Developer Should Know",
-      channel: "Code Masters",
-      views: "856K views",
-      timeAgo: "1 week ago",
-      duration: "12:45",
-      thumbnail: "/placeholder.svg?height=180&width=320&text=JavaScript+Tips",
-      channelInitial: "C",
-      description:
-        "Discover 10 essential JavaScript tips that will make you a better developer. From ES6 features to performance optimization.",
-      type: "video",
-    },
-    {
-      id: "mock_clip1",
-      title: "Daily Muslim Prayer Reminder",
-      channel: "Muslims Day Clips",
-      views: "50K views",
-      timeAgo: "3 hours ago",
-      duration: "01:15",
-      thumbnail: "/placeholder.svg?height=180&width=320&text=Prayer+Clip",
-      channelInitial: "M",
-      description: "A short clip reminding about daily prayers and their importance.",
-      type: "clip",
-    },
-    {
-      id: "mock_clip2",
-      title: "Short Quran Recitation",
-      channel: "Islamic Clips",
-      views: "120K views",
-      timeAgo: "1 day ago",
-      duration: "02:00",
-      thumbnail: "/placeholder.svg?height=180&width=320&text=Quran+Clip",
-      channelInitial: "I",
-      description: "Beautiful short recitation from the Holy Quran.",
-      type: "clip",
-    },
-  ]
-
   const categories = [
     "All",
-    "Videos", // New category for main videos
-    "Clips", // New category for clips
+    "Videos",
+    "Clips",
     "Technology",
     "Music",
     "Gaming",
@@ -129,59 +75,49 @@ export default function YouTubeClonePage() {
     { name: "Tech Channel", initial: "T" },
     { name: "Music World", initial: "M" },
     { name: "Gaming Hub", initial: "G" },
-    { name: "Muslims Day", initial: "M" }, // Added for clips
+    { name: "Muslims Day", initial: "M" },
   ]
 
-  const formatDuration = useCallback((duration: string | number | undefined) => {
-    if (typeof duration === "string") return duration
-    if (!duration)
-      return `${Math.floor(Math.random() * 15) + 5}:${Math.floor(Math.random() * 60)
-        .toString()
-        .padStart(2, "0")}`
-
-    const minutes = Math.floor(duration / 60)
-    const seconds = duration % 60
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  const formatDuration = useCallback((durationInSeconds: number | undefined) => {
+    if (typeof durationInSeconds !== "number" || isNaN(durationInSeconds)) {
+      return "00:00" // Default or handle error
+    }
+    const minutes = Math.floor(durationInSeconds / 60)
+    const seconds = durationInSeconds % 60
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
   }, [])
 
-  const formatViews = useCallback((views: string | number | undefined) => {
-    if (typeof views === "string") return views
-    if (!views) return `${Math.floor(Math.random() * 999)}K views`
-
-    if (views >= 1000000) {
-      return `${(views / 1000000).toFixed(1)}M views`
-    } else if (views >= 1000) {
-      return `${(views / 1000).toFixed(1)}K views`
+  const formatViews = useCallback((viewsCount: number | undefined) => {
+    if (typeof viewsCount !== "number" || isNaN(viewsCount)) {
+      return "0 views" // Default or handle error
     }
-
-    return `${views} views`
+    if (viewsCount >= 1000000) {
+      return `${(viewsCount / 1000000).toFixed(1)}M views`
+    } else if (viewsCount >= 1000) {
+      return `${(viewsCount / 1000).toFixed(1)}K views`
+    }
+    return `${viewsCount} views`
   }, [])
 
   const formatTimeAgo = useCallback((publishedAt: string | undefined) => {
     if (!publishedAt) {
-      const timeOptions = [
-        "1 hour ago",
-        "2 hours ago",
-        "1 day ago",
-        "2 days ago",
-        "1 week ago",
-        "2 weeks ago",
-        "1 month ago",
-      ]
-      return timeOptions[Math.floor(Math.random() * timeOptions.length)]
+      return "Unknown time"
     }
+    try {
+      const now = new Date()
+      const published = new Date(publishedAt)
+      const diffInSeconds = Math.floor((now.getTime() - published.getTime()) / 1000)
 
-    const now = new Date()
-    const published = new Date(publishedAt)
-    const diffInSeconds = Math.floor((now.getTime() - published.getTime()) / 1000)
-
-    if (diffInSeconds < 60) return "Just now"
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
-    if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`
-
-    return `${Math.floor(diffInSeconds / 31536000)} years ago`
+      if (diffInSeconds < 60) return "Just now"
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
+      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
+      if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
+      if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`
+      return `${Math.floor(diffInSeconds / 31536000)} years ago`
+    } catch (e) {
+      console.error("Error parsing date:", e)
+      return "Invalid date"
+    }
   }, [])
 
   const fetchVideos = useCallback(async () => {
@@ -189,29 +125,41 @@ export default function YouTubeClonePage() {
     setError(null)
 
     try {
-      const response = await fetch("/api/videos") // Call your new API route
+      const response = await fetch("https://ximit.mahfil.net/api/v2/homefeed-videos?page=1&page_size=15")
       if (!response.ok) {
         throw new Error(`API error! status: ${response.status}`)
       }
       const data = await response.json()
-      console.log("MongoDB API Response:", data)
+      console.log("External API Response:", data)
 
-      // Assuming your MongoDB data already has 'type' field ('video' or 'clip')
-      // and other fields are consistent with your mock data structure.
-      // If not, you might need to transform the data here.
-      setVideos(data)
-      if (data.length === 0) {
-        setError("No videos found in MongoDB. Showing sample videos.")
-        setVideos(mockVideos) // Fallback to mock data if MongoDB is empty
+      // Assuming the API returns an array of video objects directly or within a 'data' field.
+      // Adjust this mapping based on the actual API response structure.
+      const fetchedVideos = (data.data || data).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        channel: item.channel_name || "Unknown Channel",
+        views: formatViews(item.views_count),
+        timeAgo: formatTimeAgo(item.published_at),
+        duration: formatDuration(item.duration_seconds),
+        thumbnail: item.thumbnail_url || "/placeholder.svg?height=180&width=320&text=Video+Thumbnail",
+        channelInitial: (item.channel_name || "U").charAt(0).toUpperCase(),
+        description: item.description || "No description available.",
+        type: item.type || "video", // Assuming 'video' or 'clip' is provided, default to 'video'
+        video_url: item.video_url || null, // Assuming a video_url field exists for playback
+      }))
+
+      setVideos(fetchedVideos)
+      if (fetchedVideos.length === 0) {
+        setError("No videos found from the external API.")
       }
     } catch (err: any) {
-      console.error("Error fetching videos from your API:", err)
-      setError(`Failed to fetch videos from your database: ${err.message}. Showing sample videos.`)
-      setVideos(mockVideos) // Fallback to mock data on error
+      console.error("Error fetching videos from external API:", err)
+      setError(`Failed to fetch videos: ${err.message}.`)
+      setVideos([]) // Ensure videos array is empty on error
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [formatDuration, formatViews, formatTimeAgo])
 
   useEffect(() => {
     // Initialize dark mode based on system preference or local storage
@@ -226,8 +174,7 @@ export default function YouTubeClonePage() {
       }
     }
 
-    setVideos(mockVideos) // Immediately show mock data
-    fetchVideos() // Then fetch real data
+    fetchVideos()
   }, [fetchVideos])
 
   const toggleDarkMode = () => {
@@ -414,7 +361,7 @@ export default function YouTubeClonePage() {
             ))}
           </div>
 
-          {loading && videos.length === 0 ? (
+          {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
@@ -432,7 +379,7 @@ export default function YouTubeClonePage() {
             </div>
           ) : (
             <>
-              {/* Error state (but still show fallback videos) */}
+              {/* Error state */}
               {error && (
                 <div className="text-center py-8 bg-red-50 dark:bg-red-900 rounded-lg mb-6">
                   <AlertCircle className="w-8 h-8 text-red-500 dark:text-red-300 mx-auto mb-2" />
