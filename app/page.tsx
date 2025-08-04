@@ -132,9 +132,22 @@ export default function YouTubeClonePage() {
       const data = await response.json()
       console.log("External API Response:", data)
 
-      // Assuming the API returns an array of video objects directly or within a 'data' field.
-      // Adjust this mapping based on the actual API response structure.
-      const fetchedVideos = (data.data || data).map((item: any) => ({
+      let rawVideos: any[] = []
+      if (Array.isArray(data)) {
+        rawVideos = data
+      } else if (data && Array.isArray(data.data)) {
+        rawVideos = data.data
+      } else if (data && Array.isArray(data.videos)) {
+        // Common alternative
+        rawVideos = data.videos
+      } else if (data && Array.isArray(data.results)) {
+        // Another common alternative
+        rawVideos = data.results
+      } else {
+        throw new Error("Unexpected API response structure: video array not found.")
+      }
+
+      const fetchedVideos = rawVideos.map((item: any) => ({
         id: item.id,
         title: item.title,
         channel: item.channel_name || "Unknown Channel",
