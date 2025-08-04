@@ -130,7 +130,7 @@ export default function YouTubeClonePage() {
     { name: "Muslims Day", initial: "M" }, // Added for clips
   ]
 
-  const formatDuration = useCallback((duration) => {
+  const formatDuration = useCallback((duration: string | number | undefined) => {
     if (typeof duration === "string") return duration
     if (!duration)
       return `${Math.floor(Math.random() * 15) + 5}:${Math.floor(Math.random() * 60)
@@ -142,7 +142,7 @@ export default function YouTubeClonePage() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }, [])
 
-  const formatViews = useCallback((views) => {
+  const formatViews = useCallback((views: string | number | undefined) => {
     if (typeof views === "string") return views
     if (!views) return `${Math.floor(Math.random() * 999)}K views`
 
@@ -155,7 +155,7 @@ export default function YouTubeClonePage() {
     return `${views} views`
   }, [])
 
-  const formatTimeAgo = useCallback((publishedAt) => {
+  const formatTimeAgo = useCallback((publishedAt: string | undefined) => {
     if (!publishedAt) {
       const timeOptions = [
         "1 hour ago",
@@ -187,29 +187,48 @@ export default function YouTubeClonePage() {
     setError(null)
 
     try {
-      const response = await fetch("/api/videos") // Call your new API route
+      const response = await fetch("https://ximit.mahfil.net/api/v2/homefeed-videos?page=1&page_size=15")
       if (!response.ok) {
         throw new Error(`API error! status: ${response.status}`)
       }
       const data = await response.json()
-      console.log("MongoDB API Response:", data)
+      console.log("Mahfil API Response:", data)
 
-      // Assuming your MongoDB data already has 'type' field ('video' or 'clip')
-      // and other fields are consistent with your mock data structure.
-      // If not, you might need to transform the data here.
-      setVideos(data)
-      if (data.length === 0) {
-        setError("No videos found in MongoDB. Showing sample videos.")
-        setVideos(mockVideos) // Fallback to mock data if MongoDB is empty
+      // Transform Mahfil API data to match our component structure
+      const transformedVideos = data.results?.map((video: any) => ({
+        id: video.id,
+        title: video.title,
+        channel: video.channel_name,
+        views: video.views_in_number + " views",
+        timeAgo: formatTimeAgo(video.created_at),
+        duration: video.duration,
+        thumbnail: video.thumbnail,
+        channelInitial: video.channel_name?.charAt(0)?.toUpperCase() || "M",
+        description: video.description?.replace(/<[^>]*>/g, '') || "", // Remove HTML tags
+        type: video.type?.toLowerCase() === "waz" ? "video" : "video", // Map Waz to video type
+        channelImage: video.channel_image,
+        channelUsername: video.channel_username,
+        isVerified: video.is_verified,
+        likes: video.like,
+        mashallah: video.mashallah,
+        commentCount: video.comment_count,
+        mp4Urls: video.mp4_urls,
+        manifest: video.manifest
+      })) || []
+
+      setVideos(transformedVideos)
+      if (transformedVideos.length === 0) {
+        setError("No videos found from Mahfil API. Showing sample videos.")
+        setVideos(mockVideos) // Fallback to mock data if API returns empty
       }
     } catch (err) {
-      console.error("Error fetching videos from your API:", err)
-      setError(`Failed to fetch videos from your database: ${err.message}. Showing sample videos.`)
+      console.error("Error fetching videos from Mahfil API:", err)
+      setError(`Failed to fetch videos from Mahfil API: ${err.message}. Showing sample videos.`)
       setVideos(mockVideos) // Fallback to mock data on error
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [formatTimeAgo])
 
   useEffect(() => {
     // Initialize dark mode based on system preference or local storage
@@ -309,6 +328,7 @@ export default function YouTubeClonePage() {
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-l-full focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
               <button
+                title="Search videos"
                 onClick={handleSearch}
                 className="px-6 py-2 bg-gray-50 dark:bg-gray-700 border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-full hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
               >
