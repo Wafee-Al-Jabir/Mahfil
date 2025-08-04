@@ -1,29 +1,25 @@
 import { NextResponse } from "next/server"
-import dbConnect from "@/lib/mongodb"
-import User from "@/models/User"
 import bcrypt from "bcryptjs"
+import connectMongoDB from "@/lib/mongodb"
+import User from "@/models/User"
 
-export async function POST(req: Request) {
-  await dbConnect()
-
+export async function POST(request: Request) {
   try {
-    const { email, password } = await req.json()
+    await connectMongoDB()
+    const { username, email, password } = await request.json()
 
-    if (!email || !password) {
-      return NextResponse.json({ message: "Email and password are required." }, { status: 400 })
-    }
-
-    const existingUser = await User.findOne({ email })
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] })
     if (existingUser) {
-      return NextResponse.json({ message: "User with this email already exists." }, { status: 409 })
+      return NextResponse.json({ message: "User with this email or username already exists" }, { status: 409 })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
-    const newUser = await User.create({ email, password: hashedPassword })
 
-    return NextResponse.json({ message: "User registered successfully!", user: newUser.email }, { status: 201 })
-  } catch (error: any) {
-    console.error("Signup error:", error)
-    return NextResponse.json({ message: "Internal server error.", error: error.message }, { status: 500 })
+    await User.create({ username, email, password: hashedPassword })
+
+    return NextResponse.json({ message: "User registered successfully" }, { status: 201 })
+  } catch (error) {
+    console.error("Sign up error:", error)
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
   }
 }

@@ -1,586 +1,246 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect, useCallback } from "react"
-import Image from "next/image"
-import {
-  Menu,
-  Search,
-  Video,
-  Bell,
-  User,
-  Home,
-  TrendingUp,
-  Music,
-  Film,
-  Gamepad2,
-  Newspaper,
-  Trophy,
-  Lightbulb,
-  Shirt,
-  Podcast,
-  Play,
-  X,
-  AlertCircle,
-  MoreVertical,
-  RotateCw,
-  Sun,
-  Moon,
-} from "lucide-react"
-import { YouTubeLogoDark } from "@/components/youtube-logo-dark"
-import { YouTubeLogoLight } from "@/components/youtube-logo-light"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  Search,
+  Bell,
+  Menu,
+  Home,
+  Compass,
+  Youtube,
+  History,
+  ThumbsUp,
+  Clock,
+  Settings,
+  Flag,
+  HelpCircle,
+  MessageSquare,
+} from "lucide-react"
+import { useTheme } from "next-themes"
+import { YouTubeLogoLight } from "@/components/youtube-logo-light"
+import { YouTubeLogoDark } from "@/components/youtube-logo-dark"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 
-export default function YouTubeClonePage() {
-  const [videos, setVideos] = useState([])
+interface Video {
+  _id: string
+  title: string
+  thumbnailUrl: string
+  channelName: string
+  views: number
+  uploadDate: string
+  channelAvatarUrl: string
+}
+
+export default function HomePage() {
+  const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedVideo, setSelectedVideo] = useState<any>(null)
-  const [selectedCategory, setSelectedCategory] = useState("All")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isDarkMode, setIsDarkMode] = useState(false)
-
-  const categories = [
-    "All",
-    "Videos",
-    "Clips",
-    "Technology",
-    "Music",
-    "Gaming",
-    "Sports",
-    "News",
-    "Education",
-    "Entertainment",
-    "Science",
-    "Travel",
-  ]
-
-  const sidebarItems = [
-    { name: "Home", icon: Home, active: true },
-    { name: "Trending", icon: TrendingUp, active: false },
-    { name: "Music", icon: Music, active: false },
-    { name: "Movies", icon: Film, active: false },
-    { name: "Gaming", icon: Gamepad2, active: false },
-    { name: "News", icon: Newspaper, active: false },
-    { name: "Sports", icon: Trophy, active: false },
-    { name: "Learning", icon: Lightbulb, active: false },
-    { name: "Fashion", icon: Shirt, active: false },
-    { name: "Podcasts", icon: Podcast, active: false },
-  ]
-
-  const subscriptions = [
-    { name: "Tech Channel", initial: "T" },
-    { name: "Music World", initial: "M" },
-    { name: "Gaming Hub", initial: "G" },
-    { name: "Muslims Day", initial: "M" },
-  ]
-
-  const formatDuration = useCallback((durationInSeconds: number | undefined) => {
-    if (typeof durationInSeconds !== "number" || isNaN(durationInSeconds)) {
-      return "00:00" // Default or handle error
-    }
-    const minutes = Math.floor(durationInSeconds / 60)
-    const seconds = durationInSeconds % 60
-    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-  }, [])
-
-  const formatViews = useCallback((viewsCount: number | undefined) => {
-    if (typeof viewsCount !== "number" || isNaN(viewsCount)) {
-      return "0 views" // Default or handle error
-    }
-    if (viewsCount >= 1000000) {
-      return `${(viewsCount / 1000000).toFixed(1)}M views`
-    } else if (viewsCount >= 1000) {
-      return `${(viewsCount / 1000).toFixed(1)}K views`
-    }
-    return `${viewsCount} views`
-  }, [])
-
-  const formatTimeAgo = useCallback((publishedAt: string | undefined) => {
-    if (!publishedAt) {
-      return "Unknown time"
-    }
-    try {
-      const now = new Date()
-      const published = new Date(publishedAt)
-      const diffInSeconds = Math.floor((now.getTime() - published.getTime()) / 1000)
-
-      if (diffInSeconds < 60) return "Just now"
-      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-      if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`
-      if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`
-      return `${Math.floor(diffInSeconds / 31536000)} years ago`
-    } catch (e) {
-      console.error("Error parsing date:", e)
-      return "Invalid date"
-    }
-  }, [])
-
-  const fetchVideos = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch("https://ximit.mahfil.net/api/v2/homefeed-videos?page=1&page_size=15")
-      if (!response.ok) {
-        throw new Error(`API error! status: ${response.status}`)
-      }
-      const data = await response.json()
-      console.log("External API Response:", data)
-
-      let rawVideos: any[] = []
-      if (Array.isArray(data)) {
-        rawVideos = data
-      } else if (data && Array.isArray(data.data)) {
-        rawVideos = data.data
-      } else if (data && Array.isArray(data.videos)) {
-        // Common alternative
-        rawVideos = data.videos
-      } else if (data && Array.isArray(data.results)) {
-        // Another common alternative
-        rawVideos = data.results
-      } else {
-        throw new Error("Unexpected API response structure: video array not found.")
-      }
-
-      const fetchedVideos = rawVideos.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        channel: item.channel_name || "Unknown Channel",
-        views: formatViews(item.views_count),
-        timeAgo: formatTimeAgo(item.published_at),
-        duration: formatDuration(item.duration_seconds),
-        thumbnail: item.thumbnail_url || "/placeholder.svg?height=180&width=320&text=Video+Thumbnail",
-        channelInitial: (item.channel_name || "U").charAt(0).toUpperCase(),
-        description: item.description || "No description available.",
-        type: item.type || "video", // Assuming 'video' or 'clip' is provided, default to 'video'
-        video_url: item.video_url || null, // Assuming a video_url field exists for playback
-      }))
-
-      setVideos(fetchedVideos)
-      if (fetchedVideos.length === 0) {
-        setError("No videos found from the external API.")
-      }
-    } catch (err: any) {
-      console.error("Error fetching videos from external API:", err)
-      setError(`Failed to fetch videos: ${err.message}.`)
-      setVideos([]) // Ensure videos array is empty on error
-    } finally {
-      setLoading(false)
-    }
-  }, [formatDuration, formatViews, formatTimeAgo])
+  const { theme, setTheme } = useTheme()
 
   useEffect(() => {
-    // Initialize dark mode based on system preference or local storage
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("theme")
-      if (savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-        setIsDarkMode(true)
-        document.documentElement.classList.add("dark")
-      } else {
-        setIsDarkMode(false)
-        document.documentElement.classList.remove("dark")
+    const fetchVideos = async () => {
+      try {
+        const res = await fetch("/api/videos")
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
+        }
+        const data = await res.json()
+        setVideos(data)
+      } catch (e: any) {
+        setError(e.message)
+      } finally {
+        setLoading(false)
       }
     }
-
     fetchVideos()
-  }, [fetchVideos])
+  }, [])
 
-  const toggleDarkMode = () => {
-    setIsDarkMode((prevMode) => {
-      const newMode = !prevMode
-      if (newMode) {
-        document.documentElement.classList.add("dark")
-        localStorage.setItem("theme", "dark")
-      } else {
-        document.documentElement.classList.remove("dark")
-        localStorage.setItem("theme", "light")
-      }
-      return newMode
-    })
+  const formatViews = (views: number) => {
+    if (views >= 1000000) {
+      return `${(views / 1000000).toFixed(1)}M`
+    }
+    if (views >= 1000) {
+      return `${(views / 1000).toFixed(1)}K`
+    }
+    return views.toString()
   }
 
-  const handleSearch = () => {
-    // In a real app, this would filter or search videos
-    console.log("Searching for:", searchQuery)
-  }
+  const sidebarItems = [
+    { icon: Home, label: "Home", href: "/" },
+    { icon: Compass, label: "Explore", href: "#" },
+    { icon: Youtube, label: "Subscriptions", href: "#" },
+    { icon: History, label: "History", href: "#" },
+    { icon: ThumbsUp, label: "Liked videos", href: "#" },
+    { icon: Clock, label: "Watch later", href: "#" },
+  ]
 
-  const playVideo = (video: any) => {
-    setSelectedVideo(video)
-  }
-
-  const closeVideo = () => {
-    setSelectedVideo(null)
-  }
-
-  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    event.currentTarget.src = "/placeholder.svg?height=180&width=320&text=Video+Thumbnail"
-  }
-
-  const regularVideos = videos.filter((video: any) => video.type === "video")
-  const shortsVideos = videos.filter((video: any) => video.type === "clip")
-
-  const filteredRegularVideos = regularVideos.filter((video: any) => {
-    const matchesCategory = selectedCategory === "All" || selectedCategory === "Videos" || selectedCategory !== "Clips"
-    const matchesSearch =
-      searchQuery === "" ||
-      video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.channel.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.description.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
-
-  const filteredShortsVideos = shortsVideos.filter((video: any) => {
-    const matchesCategory = selectedCategory === "All" || selectedCategory === "Clips" || selectedCategory !== "Videos"
-    const matchesSearch =
-      searchQuery === "" ||
-      video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.channel.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.description.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
+  const moreItems = [
+    { icon: Settings, label: "Settings", href: "#" },
+    { icon: Flag, label: "Report history", href: "#" },
+    { icon: HelpCircle, label: "Help", href: "#" },
+    { icon: MessageSquare, label: "Send feedback", href: "#" },
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-50">
-        <div className="flex items-center justify-between px-4 py-3">
-          {/* Left section */}
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-            <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-          </button>
-          <div className="flex items-center space-x-2">
-            {isDarkMode ? <YouTubeLogoDark className="h-8 w-auto" /> : <YouTubeLogoLight className="h-8 w-auto" />}
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-4">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="h-6 w-6" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0">
+                <ScrollArea className="h-full py-4">
+                  <div className="px-4 pb-4">
+                    <Link href="#" className="flex items-center gap-2 font-semibold" prefetch={false}>
+                      {theme === "dark" ? (
+                        <YouTubeLogoDark className="h-6 w-auto" />
+                      ) : (
+                        <YouTubeLogoLight className="h-6 w-auto" />
+                      )}
+                      <span className="sr-only">YouTube Clone</span>
+                    </Link>
+                  </div>
+                  <nav className="grid gap-1 px-4">
+                    {sidebarItems.map((item, index) => (
+                      <Link
+                        key={index}
+                        href={item.href}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                        prefetch={false}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.label}
+                      </Link>
+                    ))}
+                  </nav>
+                  <Separator className="my-4" />
+                  <div className="px-4 text-sm font-semibold text-muted-foreground">More from YouTube</div>
+                  <nav className="grid gap-1 px-4 mt-2">
+                    {moreItems.map((item, index) => (
+                      <Link
+                        key={index}
+                        href={item.href}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                        prefetch={false}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.label}
+                      </Link>
+                    ))}
+                  </nav>
+                </ScrollArea>
+              </SheetContent>
+            </Sheet>
+            <Link href="#" className="flex items-center gap-2 font-semibold" prefetch={false}>
+              {theme === "dark" ? (
+                <YouTubeLogoDark className="h-6 w-auto" />
+              ) : (
+                <YouTubeLogoLight className="h-6 w-auto" />
+              )}
+              <span className="sr-only">YouTube Clone</span>
+            </Link>
           </div>
-        </div>
-
-        {/* Center section - Search */}
-        <div className="flex-1 max-w-2xl mx-8">
-          <div className="flex">
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-l-full focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-            />
-            <button
-              title="Search videos"
-              onClick={handleSearch}
-              className="px-6 py-2 bg-gray-50 dark:bg-gray-700 border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-full hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
-            >
-              <Search className="w-5 h-5" />
-            </button>
+          <div className="flex-1 max-w-md mx-auto px-4">
+            {" "}
+            {/* Added px-4 for horizontal padding */}
+            <div className="relative flex w-full items-center">
+              <Input type="search" placeholder="Search" className="w-full rounded-full pl-4 pr-10 py-2" />
+              <Button type="submit" size="icon" className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full">
+                <Search className="h-5 w-5" />
+                <span className="sr-only">Search</span>
+              </Button>
+            </div>
           </div>
-        </div>
-
-        {/* Right section */}
-        <div className="flex items-center space-x-4">
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-            <Video className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-            <Bell className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full" onClick={fetchVideos}>
-            <RotateCw className="w-6 h-6 text-gray-700 dark:text-gray-300" /> {/* Refresh/Reload icon */}
-          </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full" onClick={toggleDarkMode}>
-            {isDarkMode ? <Sun className="w-6 h-6 text-yellow-400" /> : <Moon className="w-6 h-6 text-gray-700" />}
-          </button>
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-white" /> {/* User icon, or 'U' if no icon */}
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon">
+              <Bell className="h-6 w-6" />
+              <span className="sr-only">Notifications</span>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="h-9 w-9 cursor-pointer">
+                  <AvatarImage src="/placeholder-user.jpg" alt="User Avatar" />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <Link href="/signin" prefetch={false}>
+                    Sign In
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link href="/signup" prefetch={false}>
+                    Sign Up
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                  Toggle Theme
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
-
-      <div className="flex pt-16">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white dark:bg-gray-900 h-screen sticky top-16 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
-          <div className="p-4">
-            <nav className="space-y-2">
-              {sidebarItems.map((item) => (
-                <a
-                  key={item.name}
-                  href="#"
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg ${item.name === "Home" ? "bg-gray-100 dark:bg-gray-800 font-medium" : "hover:bg-gray-100 dark:hover:bg-gray-800"} text-gray-700 dark:text-gray-300`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.name}</span>
-                </a>
-              ))}
-            </nav>
-
-            <div className="border-t border-gray-200 dark:border-gray-800 mt-4 pt-4">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 px-3">Subscriptions</h3>
+      <main className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 md:p-6">
+        {loading ? (
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex flex-col space-y-3">
+              <Skeleton className="h-[200px] w-full rounded-xl" />
               <div className="space-y-2">
-                {subscriptions.map((channel) => (
-                  <a
-                    key={channel.name}
-                    href="#"
-                    className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-                  >
-                    <div className="w-6 h-6 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">{channel.initial}</span>
-                    </div>
-                    <span className="text-sm">{channel.name}</span>
-                  </a>
-                ))}
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
               </div>
             </div>
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          <Card className="w-full mb-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Join the Community!</CardTitle>
-              <CardDescription>
-                Sign in or sign up to personalize your experience, save videos, and more.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center space-x-4 pb-6">
-              <Link href="/signin" passHref>
-                <Button className="bg-red-600 hover:bg-red-700 text-white">Sign In</Button>
-              </Link>
-              <Link href="/signup" passHref>
-                <Button
-                  variant="outline"
-                  className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-gray-800 dark:text-red-400 dark:border-red-400 bg-transparent"
-                >
-                  Sign Up
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-          {/* Category Pills */}
-          <div className="flex space-x-3 mb-6 overflow-x-auto pb-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === category ? "bg-black text-white dark:bg-gray-100 dark:text-gray-900" : "bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300"}`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="bg-gray-300 dark:bg-gray-700 aspect-video rounded-lg mb-3"></div>
-                  <div className="flex space-x-3">
-                    <div className="w-9 h-9 bg-gray-300 dark:bg-gray-700 rounded-full flex-shrink-0"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
-                      <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-1/3"></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <>
-              {/* Error state */}
-              {error && (
-                <div className="text-center py-8 bg-red-50 dark:bg-red-900 rounded-lg mb-6">
-                  <AlertCircle className="w-8 h-8 text-red-500 dark:text-red-300 mx-auto mb-2" />
-                  <p className="text-red-600 dark:text-red-200 text-sm">{error}</p>
-                </div>
-              )}
-
-              {(() => {
-                const content = []
-                let regularVideoIndex = 0
-                let shortsVideoIndex = 0
-                const videosPerChunk = 8 // 2 rows * 4 columns
-                const shortsPerChunk = filteredShortsVideos.length // Display all available shorts in one row
-
-                while (
-                  regularVideoIndex < filteredRegularVideos.length ||
-                  shortsVideoIndex < filteredShortsVideos.length
-                ) {
-                  // Add 2 rows of regular videos
-                  const currentRegularVideos = filteredRegularVideos.slice(
-                    regularVideoIndex,
-                    regularVideoIndex + videosPerChunk,
-                  )
-                  if (currentRegularVideos.length > 0 && selectedCategory !== "Clips") {
-                    content.push(
-                      <div
-                        key={`videos-${regularVideoIndex}`}
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8"
-                      >
-                        {currentRegularVideos.map((video) => (
-                          <div key={video.id} className="cursor-pointer group" onClick={() => playVideo(video)}>
-                            <div className="relative aspect-video bg-gray-300 dark:bg-gray-700 rounded-lg overflow-hidden mb-3">
-                              <Image
-                                src={video.thumbnail || "/placeholder.svg"}
-                                alt={video.title}
-                                width={320}
-                                height={180}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                onError={handleImageError}
-                              />
-                              <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-1 py-0.5 rounded">
-                                {video.duration}
-                              </div>
-                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
-                                <Play className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                              </div>
-                            </div>
-                            <div className="flex space-x-3">
-                              <div className="w-9 h-9 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-white text-sm font-bold">{video.channelInitial}</span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 line-clamp-2 mb-1">
-                                  {video.title}
-                                </h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{video.channel}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {video.views} • {video.timeAgo}
-                                </p>
-                              </div>
-                              <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-all duration-200">
-                                <MoreVertical className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>,
-                    )
-                    regularVideoIndex += videosPerChunk
-                  }
-
-                  // Add 1 row of shorts
-                  const currentShortsVideos = filteredShortsVideos.slice(
-                    shortsVideoIndex,
-                    shortsVideoIndex + shortsPerChunk,
-                  )
-                  if (currentShortsVideos.length > 0 && selectedCategory !== "Videos") {
-                    content.push(
-                      <div key={`shorts-${shortsVideoIndex}`} className="mb-8">
-                        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Shorts</h2>
-                        <div className="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide">
-                          {currentShortsVideos.map((video) => (
-                            <div
-                              key={video.id}
-                              className="flex-shrink-0 w-40 cursor-pointer group"
-                              onClick={() => playVideo(video)}
-                            >
-                              <div className="relative w-full aspect-[9/16] bg-gray-300 dark:bg-gray-700 rounded-lg overflow-hidden mb-2">
-                                <Image
-                                  src={video.thumbnail || "/placeholder.svg"}
-                                  alt={video.title}
-                                  width={160}
-                                  height={284} // 160 * (16/9)
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                  onError={handleImageError}
-                                />
-                                <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-1 py-0.5 rounded">
-                                  {video.duration}
-                                </div>
-                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
-                                  <Play className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 line-clamp-2">
-                                  {video.title}
-                                </h3>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">{video.views}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="border-b border-gray-200 dark:border-gray-800 my-6"></div>
-                      </div>,
-                    )
-                    shortsVideoIndex += shortsPerChunk // Move to the next set of shorts
-                  }
-                }
-                return content
-              })()}
-
-              {/* Load More Button (for mock data or if API has more pages) */}
-              {!loading && (filteredRegularVideos.length > 0 || filteredShortsVideos.length > 0) && (
-                <div className="text-center mt-8">
-                  <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
-                    Load More Videos
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </main>
-      </div>
-
-      {/* Video player modal */}
-      {selectedVideo && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
-          onClick={closeVideo}
-        >
-          <div
-            className="bg-white dark:bg-gray-900 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1 pr-4">
-                  <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">{selectedVideo.title}</h2>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                    <span>{selectedVideo.views}</span>
-                    <span>{selectedVideo.timeAgo}</span>
-                  </div>
-                </div>
-                <button onClick={closeVideo} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-                  <X className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-                </button>
+          ))
+        ) : error ? (
+          <div className="col-span-full text-center text-red-500">Error loading videos: {error}</div>
+        ) : (
+          videos.map((video) => (
+            <Link key={video._id} href={`/watch/${video._id}`} className="group block" prefetch={false}>
+              <div className="relative w-full aspect-video overflow-hidden rounded-lg">
+                <Image
+                  src={video.thumbnailUrl || "/placeholder.svg?height=200&width=300&query=video thumbnail"}
+                  alt={`Thumbnail for ${video.title}`}
+                  width={300}
+                  height={200}
+                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                />
               </div>
-
-              <div className="aspect-video bg-black rounded-lg mb-4 flex items-center justify-center">
-                {selectedVideo.video_url ? (
-                  <video src={selectedVideo.video_url} controls autoPlay className="w-full h-full rounded-lg"></video>
-                ) : (
-                  <div className="text-center text-white">
-                    <Play className="w-16 h-16 mx-auto mb-4" />
-                    <p className="text-lg">Video player would be here</p>
-                    <p className="text-sm opacity-75 mt-2">No direct video URL available for this item.</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">{selectedVideo.channelInitial}</span>
+              <div className="flex items-start gap-3 mt-3">
+                <Avatar className="w-9 h-9">
+                  <AvatarImage
+                    src={video.channelAvatarUrl || "/placeholder-user.jpg"}
+                    alt={`Avatar of ${video.channelName}`}
+                  />
+                  <AvatarFallback>{video.channelName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="grid gap-1">
+                  <h3 className="text-base font-semibold leading-tight line-clamp-2">{video.title}</h3>
+                  <p className="text-sm text-muted-foreground">{video.channelName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatViews(video.views)} views • {video.uploadDate}
+                  </p>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">{selectedVideo.channel}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">1.2M subscribers</p> {/* Static for now */}
-                </div>
-                <button className="px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors">
-                  Subscribe
-                </button>
               </div>
-
-              <div className="border-t border-gray-200 dark:border-gray-800 pt-4">
-                <p className="text-gray-700 dark:text-gray-300">{selectedVideo.description}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </Link>
+          ))
+        )}
+      </main>
     </div>
   )
 }

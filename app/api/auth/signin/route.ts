@@ -1,33 +1,31 @@
 import { NextResponse } from "next/server"
-import dbConnect from "@/lib/mongodb"
-import User from "@/models/User"
 import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
+import connectMongoDB from "@/lib/mongodb"
+import User from "@/models/User"
 
-export async function POST(req: Request) {
-  await dbConnect()
-
+export async function POST(request: Request) {
   try {
-    const { email, password } = await req.json()
-
-    if (!email || !password) {
-      return NextResponse.json({ message: "Email and password are required." }, { status: 400 })
-    }
+    await connectMongoDB()
+    const { email, password } = await request.json()
 
     const user = await User.findOne({ email })
     if (!user) {
-      return NextResponse.json({ message: "Invalid credentials." }, { status: 401 })
+      return NextResponse.json({ message: "Invalid credentials" }, { status: 400 })
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password)
-    if (!isPasswordValid) {
-      return NextResponse.json({ message: "Invalid credentials." }, { status: 401 })
+    const isMatch = await bcrypt.compare(password, user.password)
+    if (!isMatch) {
+      return NextResponse.json({ message: "Invalid credentials" }, { status: 400 })
     }
 
-    // In a real application, you would generate and return a JWT or set a session cookie here.
-    // For this example, we'll just return a success message.
-    return NextResponse.json({ message: "Sign in successful!", user: user.email }, { status: 200 })
-  } catch (error: any) {
-    console.error("Signin error:", error)
-    return NextResponse.json({ message: "Internal server error.", error: error.message }, { status: 500 })
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "your_jwt_secret", {
+      expiresIn: "1h",
+    })
+
+    return NextResponse.json({ message: "Sign in successful", token }, { status: 200 })
+  } catch (error) {
+    console.error("Sign in error:", error)
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
   }
 }

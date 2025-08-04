@@ -1,30 +1,28 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [message, setMessage] = useState("")
-  const [isError, setIsError] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setMessage("")
-    setIsError(false)
-    setIsLoading(true)
-
+    setLoading(true)
     try {
-      const response = await fetch("/api/auth/signin", {
+      const res = await fetch("/api/auth/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -32,72 +30,80 @@ export default function SignInPage() {
         body: JSON.stringify({ email, password }),
       })
 
-      const data = await response.json()
+      const data = await res.json()
 
-      if (response.ok) {
-        setMessage(data.message)
-        setIsError(false)
-        // Redirect to home page or dashboard after successful sign-in
-        router.push("/")
+      if (res.ok) {
+        toast({
+          title: "Sign In Successful",
+          description: "You have been successfully signed in.",
+          variant: "default",
+        })
+        // In a real app, you'd store the token (e.g., in localStorage or a cookie)
+        // and redirect to a protected route.
+        console.log("JWT Token:", data.token)
+        router.push("/") // Redirect to home page or dashboard
       } else {
-        setMessage(data.message || "Sign in failed.")
-        setIsError(true)
+        toast({
+          title: "Sign In Failed",
+          description: data.message || "Invalid credentials. Please try again.",
+          variant: "destructive",
+        })
       }
-    } catch (error: any) {
-      console.error("Client-side sign-in error:", error)
-      setMessage("An unexpected error occurred. Please try again.")
-      setIsError(true)
+    } catch (error) {
+      console.error("Sign in error:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again later.",
+        variant: "destructive",
+      })
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
-      <Card className="w-full max-w-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl">Sign In</CardTitle>
-          <CardDescription>Enter your email below to sign in to your account</CardDescription>
+          <CardDescription>Enter your email and password to access your account.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
+        <CardContent className="grid gap-4">
+          <form onSubmit={handleSubmit} className="grid gap-4">
+            <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="m@example.com"
-                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                required
               />
             </div>
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
-                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+                required
               />
             </div>
-            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white" disabled={isLoading}>
-              {isLoading ? "Signing In..." : "Sign In"}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
-          {message && (
-            <p className={`mt-4 text-center text-sm ${isError ? "text-red-500" : "text-green-500"}`}>{message}</p>
-          )}
-          <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="underline text-red-600 hover:text-red-700">
+        </CardContent>
+        <CardFooter className="flex flex-col gap-2">
+          <p className="text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link href="/signup" className="font-medium hover:underline" prefetch={false}>
               Sign Up
             </Link>
-          </div>
-        </CardContent>
+          </p>
+        </CardFooter>
       </Card>
     </div>
   )
