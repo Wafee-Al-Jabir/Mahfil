@@ -189,49 +189,29 @@ export default function YouTubeClonePage() {
     setError(null)
 
     try {
-      const response = await fetch("https://ximit.mahfil.net/api/v2/homefeed-videos?page=1&page_size=15")
+      const response = await fetch("/api/videos") // Call your new API route
       if (!response.ok) {
         throw new Error(`API error! status: ${response.status}`)
       }
       const data = await response.json()
-      console.log("Mahfil API Response:", data)
+      console.log("MongoDB API Response:", data)
 
-      // Transform Mahfil API data to match our component structure
-      const transformedVideos =
-        data.results?.map((video: any) => ({
-          id: video.id,
-          title: video.title,
-          channel: video.channel_name,
-          views: video.views_in_number + " views",
-          timeAgo: formatTimeAgo(video.created_at),
-          duration: video.duration,
-          thumbnail: video.thumbnail,
-          channelInitial: video.channel_name?.charAt(0)?.toUpperCase() || "M",
-          description: video.description?.replace(/<[^>]*>/g, "") || "", // Remove HTML tags
-          type: video.type?.toLowerCase() === "waz" ? "video" : "video", // Map Waz to video type
-          channelImage: video.channel_image,
-          channelUsername: video.channel_username,
-          isVerified: video.is_verified,
-          likes: video.like,
-          mashallah: video.mashallah,
-          commentCount: video.comment_count,
-          mp4Urls: video.mp4_urls,
-          manifest: video.manifest,
-        })) || []
-
-      setVideos(transformedVideos)
-      if (transformedVideos.length === 0) {
-        setError("No videos found from Mahfil API. Showing sample videos.")
-        setVideos(mockVideos) // Fallback to mock data if API returns empty
+      // Assuming your MongoDB data already has 'type' field ('video' or 'clip')
+      // and other fields are consistent with your mock data structure.
+      // If not, you might need to transform the data here.
+      setVideos(data)
+      if (data.length === 0) {
+        setError("No videos found in MongoDB. Showing sample videos.")
+        setVideos(mockVideos) // Fallback to mock data if MongoDB is empty
       }
-    } catch (err) {
-      console.error("Error fetching videos from Mahfil API:", err)
-      setError(`Failed to fetch videos from Mahfil API: ${err.message}. Showing sample videos.`)
+    } catch (err: any) {
+      console.error("Error fetching videos from your API:", err)
+      setError(`Failed to fetch videos from your database: ${err.message}. Showing sample videos.`)
       setVideos(mockVideos) // Fallback to mock data on error
     } finally {
       setLoading(false)
     }
-  }, [formatTimeAgo])
+  }, [])
 
   useEffect(() => {
     // Initialize dark mode based on system preference or local storage

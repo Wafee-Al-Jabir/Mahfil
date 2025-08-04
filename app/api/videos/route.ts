@@ -7,23 +7,22 @@ export async function GET() {
 
   try {
     const videos = await Video.find({})
-    return NextResponse.json(videos)
-  } catch (error) {
+    return NextResponse.json(videos, { status: 200 })
+  } catch (error: any) {
     console.error("Error fetching videos from MongoDB:", error)
-    return NextResponse.json({ error: "Failed to fetch videos" }, { status: 500 })
+    return NextResponse.json({ message: "Failed to fetch videos.", error: error.message }, { status: 500 })
   }
 }
 
-// You might also want to add a POST route to seed data or add new videos
 export async function POST(req: Request) {
   await dbConnect()
 
   try {
-    const body = await req.json()
-    const newVideo = await Video.create(body)
-    return NextResponse.json(newVideo, { status: 201 })
-  } catch (error) {
+    const videoData = await req.json()
+    const newVideo = await Video.create(videoData)
+    return NextResponse.json({ message: "Video added successfully!", video: newVideo }, { status: 201 })
+  } catch (error: any) {
     console.error("Error adding video to MongoDB:", error)
-    return NextResponse.json({ error: "Failed to add video" }, { status: 500 })
+    return NextResponse.json({ message: "Failed to add video.", error: error.message }, { status: 500 })
   }
 }
